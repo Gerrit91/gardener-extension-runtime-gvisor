@@ -16,6 +16,10 @@ vpa:
   updatePolicy:
     updateMode: "Auto"
 
+webhookConfig:
+  servicePort: 443
+  serverPort: 10250
+
 # settings for metrics, e.g. scraping by seed-prometheus
 metrics:
   enableScraping: true
@@ -25,10 +29,11 @@ metrics:
 controllers:
   concurrentSyncs: 5
   ignoreOperationAnnotation: false
-  heartbeat: 
-    renewIntervalSeconds: 30 
+  heartbeat:
+    renewIntervalSeconds: 30
 
 disableControllers: []
+disableWebhooks: []
 
 gardener:
   version: ""

@@ -41,19 +41,5 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, cr *extension
 		return err
 	}
 
-	log.Info("Installing gVisor", "shoot", cluster.Shoot.Name, "shootNamespace", cluster.Shoot.Namespace, "workerPoolName", cr.Spec.WorkerPool.Name)
-	gVisorInstallationChart, err := charts.RenderGVisorInstallationChart(chartRenderer, cr)
-	if err != nil {
-		return err
-	}
-
-	installSecretName := fmt.Sprintf("%s-%s", GVisorInstallationManagedResourceName, cr.Spec.WorkerPool.Name)
-	secretName, secret := managedresources.NewSecret(a.client, cr.Namespace, installSecretName, map[string][]byte{charts.GVisorConfigKey: gVisorInstallationChart}, true)
-	installMRName := fmt.Sprintf("%s-%s", GVisorInstallationManagedResourceName, cr.Spec.WorkerPool.Name)
-	managedResource := managedresources.NewForShoot(a.client, cr.Namespace, installMRName, "extension-runtime-gvisor", false).WithSecretRef(secretName)
-
-	if err := secret.Reconcile(ctx); err != nil {
-		return err
-	}
-	return managedResource.Reconcile(ctx)
+	return nil
 }

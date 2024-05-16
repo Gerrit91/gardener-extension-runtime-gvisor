@@ -5,6 +5,7 @@ metadata:
   name: {{ include "name" . }}
   namespace: {{ .Release.Namespace }}
   annotations:
+    networking.resources.gardener.cloud/from-world-to-ports: '[{"protocol":"TCP","port":{{ .Values.webhookConfig.serverPort }}}]'
     networking.resources.gardener.cloud/from-all-seed-scrape-targets-allowed-ports: '[{"port":{{ .Values.metrics.port }},"protocol":"TCP"}]'
     networking.resources.gardener.cloud/namespace-selectors: '[{"matchLabels":{"kubernetes.io/metadata.name":"garden"}}]'
     networking.resources.gardener.cloud/pod-label-selector-namespace-alias: extensions
@@ -15,7 +16,6 @@ metadata:
 {{ include "labels" . | indent 4 }}
 spec:
   type: ClusterIP
-  clusterIP: None
   ports:
   - name: metrics
     port: {{ .Values.metrics.port }}
@@ -23,3 +23,7 @@ spec:
   selector:
 {{ include "labels" . | indent 4 }}
 {{- end }}
+  ports:
+  - port: {{ .Values.webhookConfig.servicePort }}
+    protocol: TCP
+    targetPort: {{ .Values.webhookConfig.serverPort }}

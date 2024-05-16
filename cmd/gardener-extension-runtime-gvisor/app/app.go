@@ -13,6 +13,7 @@ import (
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	"github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
 	heartbeatcmd "github.com/gardener/gardener/extensions/pkg/controller/heartbeat/cmd"
+	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/component-base/version/verflag"
@@ -22,6 +23,7 @@ import (
 	gvisorcontroller "github.com/gardener/gardener-extension-runtime-gvisor/pkg/controller"
 	"github.com/gardener/gardener-extension-runtime-gvisor/pkg/gvisor"
 	"github.com/gardener/gardener-extension-runtime-gvisor/pkg/healthcheck"
+	"github.com/gardener/gardener-extension-runtime-gvisor/pkg/webhook/operatingsystemconfig"
 )
 
 // NewControllerManagerCommand creates a new command that is used to start the Container runtime gvisor controller.
@@ -33,6 +35,8 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			LeaderElection:          true,
 			LeaderElectionID:        controllercmd.LeaderElectionNameID(gvisor.Name),
 			LeaderElectionNamespace: os.Getenv("LEADER_ELECTION_NAMESPACE"),
+			WebhookServerPort:       10250,
+			WebhookCertDir:          "/tmp/gardener-extensions-cert",
 		}
 		reconcileOpts = &controllercmd.ReconcilerOptions{
 			IgnoreOperationAnnotation: true,
@@ -55,6 +59,22 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			Namespace:            os.Getenv("LEADER_ELECTION_NAMESPACE"),
 		}
 
+		// options for the webhook server
+		webhookServerOptions = &webhookcmd.ServerOptions{
+			Namespace: os.Getenv("WEBHOOK_CONFIG_NAMESPACE"),
+		}
+
+		webhookSwitches = webhookcmd.NewSwitchOptions(
+			webhookcmd.Switch(operatingsystemconfig.Name, operatingsystemconfig.AddToManager),
+		)
+		webhookOptions = webhookcmd.NewAddToManagerOptions(
+			gvisor.Name,
+			"",
+			nil,
+			webhookServerOptions,
+			webhookSwitches,
+		)
+
 		aggOption = controllercmd.NewOptionAggregator(
 			generalOpts,
 			restOpts,
@@ -63,6 +83,7 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			controllercmd.PrefixOption("healthcheck-", healthCheckCtrlOpts),
 			controllercmd.PrefixOption("heartbeat-", heartbeatCtrlOpts),
 			reconcileOpts,
+			webhookOptions,
 		)
 	)
 
@@ -113,6 +134,10 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 
 			if err := heartbeat.AddToManager(ctx, mgr); err != nil {
 				return fmt.Errorf("could not add heartbeat controller to manager: %w", err)
+			}
+
+			if _, err := webhookOptions.Completed().AddToManager(ctx, mgr, nil); err != nil {
+				return fmt.Errorf("could not add the mutating webhook to manager: %w", err)
 			}
 
 			if err := mgr.Start(ctx); err != nil {
