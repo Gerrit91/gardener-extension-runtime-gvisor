@@ -79,37 +79,39 @@ func (e *ensurer) EnsureContainerdConfig(_ context.Context, _ gcontext.GardenCon
 		new.Containerd = &extensionsv1alpha1.ContainerdConfig{}
 	}
 
-	raw, err := json.Marshal(struct {
-		RuntimeType string `json:"runtime_type"`
+	for _, configEntry := range []struct {
+		path    []string
+		content any
 	}{
-		RuntimeType: "io.containerd.runsc.v1",
-	})
-	if err != nil {
-		return fmt.Errorf("unable to marshal containerd config: %w", err)
-	}
-
-	new.Containerd.Plugins = ensurePluginConfiguration(new.Containerd.Plugins, extensionsv1alpha1.PluginConfig{
-		Path: []string{"io.containerd.grpc.v1.cri", "containerd", "runtimes", "runsc"},
-		Values: &apiextensionsv1.JSON{
-			Raw: raw,
+		{
+			path: []string{"io.containerd.grpc.v1.cri", "containerd", "runtimes", "runsc"},
+			content: struct {
+				RuntimeType string `json:"runtime_type"`
+			}{
+				RuntimeType: "io.containerd.runsc.v1",
+			},
 		},
-	})
-
-	raw, err = json.Marshal(struct {
-		RuntimeType string `json:"runtime_type"`
-	}{
-		RuntimeType: "io.containerd.runc.v2",
-	})
-	if err != nil {
-		return fmt.Errorf("unable to marshal containerd config: %w", err)
-	}
-
-	new.Containerd.Plugins = ensurePluginConfiguration(new.Containerd.Plugins, extensionsv1alpha1.PluginConfig{
-		Path: []string{"io.containerd.grpc.v1.cri", "containerd", "runtimes", "runc"},
-		Values: &apiextensionsv1.JSON{
-			Raw: raw,
+		{
+			path: []string{"io.containerd.grpc.v1.cri", "containerd", "runtimes", "runc"},
+			content: struct {
+				RuntimeType string `json:"runtime_type"`
+			}{
+				RuntimeType: "io.containerd.runc.v2",
+			},
 		},
-	})
+	} {
+		raw, err := json.Marshal(configEntry.content)
+		if err != nil {
+			return fmt.Errorf("unable to marshal containerd config content: %w", err)
+		}
+
+		new.Containerd.Plugins = ensurePluginConfiguration(new.Containerd.Plugins, extensionsv1alpha1.PluginConfig{
+			Path: configEntry.path,
+			Values: &apiextensionsv1.JSON{
+				Raw: raw,
+			},
+		})
+	}
 
 	return nil
 }

@@ -41,5 +41,10 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, cr *extension
 		return err
 	}
 
+	installMRName := fmt.Sprintf("%s-%s", GVisorInstallationManagedResourceName, cr.Spec.WorkerPool.Name)
+	if err := managedresources.DeleteForShoot(ctx, a.client, cr.Namespace, installMRName); err != nil {
+		return err
+	}
+
 	return nil
 }
