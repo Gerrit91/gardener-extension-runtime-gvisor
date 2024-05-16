@@ -47,7 +47,7 @@ func (e *ensurer) EnsureAdditionalFiles(_ context.Context, _ gcontext.GardenCont
 
 	*new = webhook.EnsureFileWithPath(*new, extensionsv1alpha1.File{
 		Path:        path.Join(extensionsv1alpha1.ContainerDRuntimeContainersBinFolder, "containerd-shim-runsc-v1"),
-		Permissions: ptr.To(int32(0644)),
+		Permissions: ptr.To(int32(0755)),
 		Content: extensionsv1alpha1.FileContent{
 			ImageRef: &extensionsv1alpha1.FileContentImageRef{
 				Image:           ociImage,
@@ -58,7 +58,7 @@ func (e *ensurer) EnsureAdditionalFiles(_ context.Context, _ gcontext.GardenCont
 
 	*new = webhook.EnsureFileWithPath(*new, extensionsv1alpha1.File{
 		Path:        path.Join(extensionsv1alpha1.ContainerDRuntimeContainersBinFolder, "runsc"),
-		Permissions: ptr.To(int32(0644)),
+		Permissions: ptr.To(int32(0755)),
 		Content: extensionsv1alpha1.FileContent{
 			ImageRef: &extensionsv1alpha1.FileContentImageRef{
 				Image:           ociImage,
